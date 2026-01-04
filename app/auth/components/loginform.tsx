@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Eye } from "lucide-react";
+import { Mail, Lock, ArrowRight } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LoginData, loginSchema } from "../schema";
-
 
 export default function LoginForm() {
   const router = useRouter();
@@ -32,116 +31,115 @@ export default function LoginForm() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(submit)}
-      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#bfe7ef] via-[#7cc8e9] to-[#1ea0ff] relative overflow-hidden"
-    >
-      {/* Decorative Circle */}
-      <div className="absolute -left-40 top-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-white/40 blur-3xl"></div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background Image - Behind everything */}
+      <div 
+        className="fixed inset-0 w-full h-full bg-cover bg-center blur-xl opacity-40 pointer-events-none"
+        style={{ 
+          backgroundImage: "url('/images/background.png')",
+          zIndex: -1
+        }}
+      ></div>
 
-      <div className="relative z-10 w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 items-center px-8">
-        {/* Left Content */}
-        <div className="hidden md:block">
-          <h1 className="text-4xl font-extrabold text-[#0b2c5d] drop-shadow mb-4">
-            Welcome to the Funchat
-          </h1>
+      {/* Animated gradient blobs */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
 
-          <p className="text-2xl font-semibold text-gray-900 mb-8">
-            Stay connected with <br /> Funchat Anytime
-          </p>
-
-          <Image
-            src="/images/phone.png"
-            alt="Phone Icon"
-            width={350}
-            height={350}
-            className="drop-shadow-xl"
-          />
-        </div>
-
-        {/* Login Card */}
-        <div className="flex justify-center">
-          <div className="w-full max-w-md bg-gradient-to-b from-[#5fa3dd] to-[#6c7a89] rounded-3xl p-8 shadow-2xl border border-black/20">
-            <h2 className="text-2xl font-bold text-center text-black mb-2">
-              Welcome Back
-            </h2>
-            <p className="text-center text-sm text-black/70 mb-6">
-              Enter your credentials for login
-            </p>
-
-            {/* Google Button */}
-            <button
-              type="button"
-              className="w-full flex items-center justify-center gap-3 bg-white rounded-full py-2 mb-6 shadow hover:scale-[1.02] transition"
-            >
-              <Image src="/images/google.png" alt="Google" width={20} height={20} />
-              <span className="font-medium text-gray-700">
-                Continue with Google
-              </span>
-            </button>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-[1px] bg-cyan-300"></div>
-              <span className="text-white">Or</span>
-              <div className="flex-1 h-[1px] bg-cyan-300"></div>
+      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden relative z-10">
+        <div className="flex flex-col lg:flex-row">
+          
+          {/* LEFT SIDE */}
+          <div className="lg:w-1/2 bg-gradient-to-r from-[#dff6f9] via-[#9ad9e5] to-[#5a8fd8] p-12 text-white flex flex-col justify-center items-center relative overflow-hidden">
+            <div className="relative z-10 text-center space-y-8"></div>
+            <div className="relative z-10 text-center space-y-8">
+              <h2 className="text-5xl font-bold">Welcome Back to<br />Funchat</h2>
+              
+              {/* Image Component */}
+              <div className="relative w-64 h-64 mx-auto">
+                <Image 
+                  src="/images/phone.png" 
+                  alt="Phone" 
+                  fill
+                  className="rounded-2xl object-cover"
+                  priority
+                  loading="eager"
+                />
+              </div>
             </div>
+          </div>
 
-            {/* Email */}
-            <input
-              type="email"
-              placeholder="example@gmail.com"
-              {...register("email")}
-              className="w-full mb-2 px-4 py-2 rounded-full outline-none shadow-inner"
-            />
-            {errors.email && (
-              <p className="text-xs text-red-600 mb-2">
-                {errors.email.message}
-              </p>
-            )}
+          {/* RIGHT SIDE */}
+          <div className="lg:w-1/2 p-12 flex items-center justify-center">
+            <div className="w-full max-w-md">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-800">Sign In</h2>
+                <p className="text-gray-500">Enter your credentials to continue</p>
+              </div>
 
-            {/* Password */}
-            <div className="relative mb-2">
-              <input
-                type="password"
-                placeholder="*** password ***"
-                {...register("password")}
-                className="w-full px-4 py-2 rounded-full outline-none shadow-inner pr-10"
-              />
-              <Eye className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5 cursor-pointer" />
+              <form onSubmit={handleSubmit(submit)} className="space-y-5">
+                
+
+                {/* EMAIL */}
+                <div>
+                  <label className="text-sm font-medium">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      {...register("email")}
+                      type="email"
+                      className="w-full pl-12 py-3 border rounded-xl outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-100 transition"
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                  {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>}
+                </div>
+
+                {/* PASSWORD */}
+                <div>
+                  <label className="text-sm font-medium">Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                    <input
+                      {...register("password")}
+                      type="password"
+                      className="w-full pl-12 py-3 border rounded-xl outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-100 transition"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>}
+                </div>
+
+                {/* Remember Me & Forgot Password */}
+                <div className="flex items-center justify-between text-sm">
+                  <label className="flex items-center gap-2 text-gray-600 cursor-pointer">
+                    <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+                    Remember me
+                  </label>
+                  <a href="#" className="text-purple-600 font-semibold hover:text-purple-700">
+                    Forgot Password?
+                  </a>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting || pending}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 hover:shadow-lg transition disabled:opacity-60"
+                >
+                  {isSubmitting || pending ? "Signing in..." : "Sign In"}
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+
+                <p className="text-center text-sm text-gray-600">
+                  Don't have an account?{" "}
+                  <Link href="/auth/signup" className="text-purple-600 font-semibold hover:text-purple-700">
+                    Create Account
+                  </Link>
+                </p>
+              </form>
             </div>
-            {errors.password && (
-              <p className="text-xs text-red-600 mb-2">
-                {errors.password.message}
-              </p>
-            )}
-
-            {/* Remember & Signup */}
-            <div className="flex items-center justify-between text-sm text-white mb-6">
-              <label className="flex items-center gap-2">
-                <input type="checkbox" />
-                remember me
-              </label>
-
-              <span>
-                Don’t have an account?{" "}
-                <Link href="/auth/signup" className="text-red-500 font-semibold">
-                  Signup
-                </Link>
-              </span>
-            </div>
-
-            {/* Login Button */}
-            <button
-              type="submit"
-              disabled={isSubmitting || pending}
-              className="w-full bg-gradient-to-r from-cyan-400 to-teal-500 text-black font-bold py-2 rounded-full text-lg shadow-lg hover:scale-[1.03] transition disabled:opacity-60"
-            >
-              {isSubmitting || pending ? "Logging in..." : "LOGIN"}
-            </button>
           </div>
         </div>
       </div>
-    </form>
+    </div>
   );
 }
