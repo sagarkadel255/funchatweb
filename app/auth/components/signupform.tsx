@@ -1,5 +1,5 @@
 "use client";
-
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransition } from "react";
@@ -24,22 +24,51 @@ function SignupPage() {
     startTransition(async () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       console.log("register", values);
-      router.push("/dashboard"); // or "/login" if you prefer
+      router.push("/dashboard");
     });
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
-      <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+      {/* Background Image - Fixed positioning */}
+      <div 
+        className="fixed inset-0 w-full h-full bg-cover bg-center blur-xl opacity-40 pointer-events-none"
+        style={{ 
+          backgroundImage: "url('/images/background.png')",
+          zIndex: 0
+        }}
+      ></div>
 
-      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden relative z-10">
+      {/* Animated gradient blobs */}
+      <div className="absolute top-0 left-0 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style={{ zIndex: 1 }}></div>
+      <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style={{ zIndex: 1 }}></div>
+
+      {/* BACKGROUND IMAGE - Using regular div with background-image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center filter blur-xl opacity-40 -z-10"
+        style={{ backgroundImage: "url('/images/background.png')" }}
+      ></div>
+
+      <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden relative" style={{ zIndex: 10 }}>
         <div className="flex flex-col lg:flex-row">
+          
           {/* LEFT SIDE */}
-          <div className="lg:w-1/2 bg-gradient-to-br from-purple-600 via-purple-700 to-blue-600 p-12 text-white flex flex-col justify-center items-center relative overflow-hidden">
+          <div className="lg:w-1/2 bg-gradient-to-r from-[#dff6f9] via-[#9ad9e5] to-[#5a8fd8] p-12 text-white flex flex-col justify-center items-center relative overflow-hidden">
+            <div className="relative z-10 text-center space-y-8"></div>
             <div className="relative z-10 text-center space-y-8">
               <h2 className="text-5xl font-bold">Connect, Chat,<br />Share Moments</h2>
-              <img src="images/phone.png" className="rounded-2xl h-64 object-cover" />
+              
+              {/* Fixed Image Component */}
+              <div className="relative w-64 h-64 mx-auto">
+                <Image 
+                  src="/images/phone.png" 
+                  alt="Phone" 
+                  fill
+                  className="rounded-2xl object-cover"
+                  priority
+                  loading="eager"
+                />
+              </div>
             </div>
           </div>
 
@@ -48,7 +77,7 @@ function SignupPage() {
             <div className="w-full max-w-md">
               <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-gray-800">Create Account</h2>
-                <p className="text-gray-500">Start your journey with Funchat today</p>
+                <p className="text-gray-500">Start your journey with Funchat</p>
               </div>
 
               <form onSubmit={handleSubmit(submit)} className="space-y-5">
@@ -60,7 +89,7 @@ function SignupPage() {
                     <input
                       {...register("name")}
                       className="w-full pl-12 py-3 border rounded-xl outline-none"
-                      placeholder="John Doe"
+                      placeholder="sagar"
                     />
                   </div>
                   {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
@@ -116,7 +145,7 @@ function SignupPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting || pending}
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
                 >
                   {isSubmitting || pending ? "Creating account..." : "Create Account"}
                   <ArrowRight className="w-5 h-5" />
