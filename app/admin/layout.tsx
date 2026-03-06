@@ -1,69 +1,38 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Sidebar from '../admin/components/sidebar';
-import Header from '../admin/components/header';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/lib/store/authstore";
+import AdminSidebar from "./_components/sidebar";
+import AdminHeader from "./_components/header";
+import LoadingSpinner from "@/app/_components/loadingspinner";
 
-interface UserData {
-  id: string;
-  email: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  profileImage?: string;
-}
-
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [user, setUser] = useState<UserData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, user, initFromStorage } = useAuthStore();
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    
-    if (!userData || !token) {
-      router.push('/auth/login');
-      return;
-    }
+    initFromStorage();
+  }, []);
 
-    try {
-      const parsedUser = JSON.parse(userData);
-      
-      // Check if user is admin
-      if (parsedUser.role !== 'admin') {
-        router.push('/dashboard');
-        return;
-      }
-      
-      setUser(parsedUser);
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      router.push('/auth/login');
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("fc_token") : null;
+    if (!isAuthenticated && !token) {
+      router.replace("/login");
+    } else if (isAuthenticated && user?.role !== "admin") {
+      router.replace("/user/dashboard");
     }
-  }, [router]);
+  }, [isAuthenticated, user]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  const token = typeof window !== "undefined" ? localStorage.getItem("fc_token") : null;
+  if (!isAuthenticated && !token) return <LoadingSpinner fullScreen />;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar />
-      <div className="lg:pl-64">
-        <Header user={user} />
-        <main className="py-8 px-4 sm:px-6 lg:px-8">
+    <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg-primary)" }}>
+      <AdminSidebar />
+      <div className="flex flex-col flex-1 min-w-0">
+        <AdminHeader />
+        <main className="flex-1 overflow-auto">
           {children}
         </main>
       </div>

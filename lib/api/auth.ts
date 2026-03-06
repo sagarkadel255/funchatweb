@@ -1,61 +1,30 @@
-import { LoginData, RegisterData } from "../../app/auth/schema";
-import { API } from "./endpoints";
+import api from "./axios";
+import { ENDPOINTS } from "./endpoints";
 
-export interface AuthResponse {
-    success: boolean;
-    message: string;
-    token?: string;
-    data?: any;
-}
+export const authApi = {
+  register: (data: { username: string; email: string; password: string }) =>
+    api.post(ENDPOINTS.AUTH.REGISTER, data).then(r => r.data),
 
-export const register = async (registerData: RegisterData): Promise<AuthResponse> => {
-    try {
-        const response = await fetch(API.AUTH.REGISTER, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(registerData),
-        });
+  login: (data: { email: string; password: string }) =>
+    api.post(ENDPOINTS.AUTH.LOGIN, data).then(r => r.data),
 
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.message || 'Registration failed');
-        }
+  refreshToken: (refreshToken: string) =>
+    api.post(ENDPOINTS.AUTH.REFRESH_TOKEN, { refreshToken }).then(r => r.data),
 
-        return data;
-    } catch (error: Error | any) {
-        console.error('Registration error:', error);
-        return {
-            success: false,
-            message: error.message || 'Registration failed'
-        };
-    }
-}
+  logout: () =>
+    api.post(ENDPOINTS.AUTH.LOGOUT).then(r => r.data),
 
-export const login = async (loginData: LoginData): Promise<AuthResponse> => {
-    try {
-        const response = await fetch(API.AUTH.LOGIN, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(loginData),
-        });
+  getProfile: () =>
+    api.get(ENDPOINTS.AUTH.PROFILE).then(r => r.data),
 
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.message || 'Login failed');
-        }
+  updateProfile: (formData: FormData) =>
+    api.put(ENDPOINTS.AUTH.UPDATE_PROFILE, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }).then(r => r.data),
 
-        return data;
-    } catch (error: Error | any) {
-        console.error('Login error:', error);
-        return {
-            success: false,
-            message: error.message || 'Login failed'
-        };
-    }
-}
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.post(ENDPOINTS.AUTH.CHANGE_PASSWORD, data).then(r => r.data),
+
+  searchUsers: (query: string) =>
+    api.get(ENDPOINTS.AUTH.SEARCH_USERS, { params: { query } }).then(r => r.data),
+};

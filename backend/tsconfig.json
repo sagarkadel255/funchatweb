@@ -1,16 +1,15 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
+    "target": "ES2020",              // ✅ IMPORTANT
+    "module": "CommonJS",
+    "lib": ["ES2020"],
     "rootDir": "./src",
     "outDir": "./dist",
-
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-
     "strict": true,
+    "esModuleInterop": true,         // ✅ fixes other default import errors too
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "downlevelIteration": true       // ✅ fixes MapIterator error
   }
 }

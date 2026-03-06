@@ -1,66 +1,37 @@
 "use server";
 
-import { login, register } from "../../lib/api/auth";
-import { LoginData, RegisterData } from "../../app/auth/schema";
-import { setAuthToken, setUserData, clearAuthCookies } from "../cookie";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { authApi } from "@/lib/api/auth";
+import { extractApiError } from "@/lib/utils/api-error";
 
-export const handleRegister = async (data: RegisterData) => {
-    try {
-        const response = await register(data);
-        
-        if (response.success) {
-            return {
-                success: true,
-                message: 'Registration successful! You can now login.',
-                data: response.data
-            };
-        }
-        
-        return {
-            success: false,
-            message: response.message || 'Registration failed'
-        };
-    } catch (error: Error | any) {
-        return { 
-            success: false, 
-            message: error.message || 'Registration action failed' 
-        };
-    }
+export async function handleLogin(data: { email: string; password: string }) {
+  try {
+    const res = await authApi.login(data);
+    console.log("[auth-action] login success for:", data.email);
+    return res;
+  } catch (e) {
+    const message = extractApiError(e);
+    console.error("[auth-action] login error:", message);
+    return { success: false, message, data: null };
+  }
 }
 
-export const handleLogin = async (data: LoginData) => {
-    try {
-        const response = await login(data);
-        
-        if (response.success && response.token && response.data) {
-            // Store token and user data in cookies
-            await setAuthToken(response.token);
-            await setUserData(response.data);
-            
-            // Redirect based on user role
-            if (response.data.role === 'admin') {
-                redirect('/admin');
-            } else {
-                redirect('/dashboard');
-            }
-        }
-        
-        return {
-            success: false,
-            message: response.message || 'Login failed'
-        };
-    } catch (error: Error | any) {
-        return { 
-            success: false, 
-            message: error.message || 'Login action failed' 
-        };
-    }
+export async function handleRegister(data: { username: string; email: string; password: string }) {
+  try {
+    const res = await authApi.register(data);
+    console.log("[auth-action] register success for:", data.email);
+    return res;
+  } catch (e) {
+    const message = extractApiError(e);
+    console.error("[auth-action] register error:", message);
+    return { success: false, message, data: null };
+  }
 }
 
-export const handleLogout = async () => {
-    await clearAuthCookies();
-    revalidatePath('/');
-    redirect('/auth/login');
+export async function handleLogout() {
+  try {
+    const res = await authApi.logout();
+    return res;
+  } catch (e) {
+    return { success: false, message: extractApiError(e), data: null };
+  }
 }

@@ -1,226 +1,314 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { 
-  LogOut, 
-  User, 
-  Users, 
-  PlusCircle, 
-  Edit, 
-  Trash2,
-  BarChart3,
-  Shield
-} from 'lucide-react';
+import { useEffect, useState } from "react";
+import {
+  MessageSquare, Users, Phone, TrendingUp,
+  Activity, ArrowUpRight, Shield, Zap,
+} from "lucide-react";
+import { adminApi } from "@/lib/api/admin/user";
+import { useAuthStore } from "@/lib/store/authstore";
 
-interface AdminData {
-  _id: string;
-  email: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-}
+const STAT_CONFIG = [
+  {
+    key: "totalUsers",
+    label: "Total Users",
+    icon: Users,
+    gradient: "linear-gradient(135deg, #4f9cf9 0%, #6366f1 100%)",
+    glow: "rgba(79,156,249,0.2)",
+    desc: (s: any) => `${s?.activeUsers ?? 0} currently active`,
+  },
+  {
+    key: "totalMessages",
+    label: "Total Messages",
+    icon: MessageSquare,
+    gradient: "linear-gradient(135deg, #2dd4bf 0%, #22d3ee 100%)",
+    glow: "rgba(45,212,191,0.2)",
+    desc: () => "All time messages",
+  },
+  {
+    key: "totalCalls",
+    label: "Total Calls",
+    icon: Phone,
+    gradient: "linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)",
+    glow: "rgba(139,92,246,0.2)",
+    desc: () => "Voice + Video",
+  },
+  {
+    key: "newUsersToday",
+    label: "New Today",
+    icon: TrendingUp,
+    gradient: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)",
+    glow: "rgba(245,158,11,0.2)",
+    desc: () => "Registered today",
+  },
+  {
+    key: "onlineUsers",
+    label: "Online Now",
+    icon: Activity,
+    gradient: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+    glow: "rgba(34,197,94,0.2)",
+    desc: () => "Currently connected",
+  },
+];
 
-export default function AdminPage() {
-  const router = useRouter();
-  const [admin, setAdmin] = useState<AdminData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [users, setUsers] = useState<any[]>([]);
+export default function AdminDashboardPage() {
+  const { user } = useAuthStore();
+  const [stats, setStats] = useState<any>(null);
+  const [msgStats, setMsgStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    
-    if (!userData || !token) {
-      router.push('/auth/login');
-      return;
-    }
-
-    try {
-      const parsedUser = JSON.parse(userData);
-      if (parsedUser.role !== 'admin') {
-        router.push('/dashboard');
-        return;
-      }
-      setAdmin(parsedUser);
-      fetchUsers(token);
-    } catch (error) {
-      console.error('Error:', error);
-      router.push('/auth/login');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [router]);
-
-  const fetchUsers = async (token: string) => {
-    try {
-      const response = await fetch('http://localhost:5000/api/admin/users', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (data.success && data.data) setUsers(data.data);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.clear();
-    router.push('/auth/login');
-  };
-
-  const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure?')) return;
-    const token = localStorage.getItem('token');
-    try {
-      const response = await fetch(`http://localhost:5000/api/admin/users/${userId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      const data = await response.json();
-      if (data.success) fetchUsers(token || '');
-    } catch (error) {
-      console.error('Error deleting user:', error);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#23538a]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-      </div>
-    );
-  }
+    Promise.all([adminApi.getStats(), adminApi.getMessageStats()])
+      .then(([s, m]) => {
+        if (s.success) setStats(s.data);
+        if (m.success) setMsgStats(m.data);
+      })
+      .catch((e) => console.error("Stats load error:", e))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
-    /* MAIN WRAPPER: Added fixed background image with a gradient overlay.
-       Replace 'your-image-url.jpg' with your actual image path.
-    */
-    <div className="relative min-h-screen w-full overflow-x-hidden bg-fixed bg-cover bg-center" 
-         style={{ backgroundImage: `linear-gradient(to bottom, rgba(35, 83, 138, 0.9), rgba(138, 157, 176, 0.8)), url('../public/images/image.jpg')` }}>
-      
-      {/* Navbar - Styled with matching gradient */}
-      <nav className="bg-gradient-to-r from-[#23538a] to-[#2d66a1] shadow-lg sticky top-0 z-50 border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Shield className="h-8 w-8 text-white" />
-              <span className="ml-2 text-xl font-bold text-white tracking-tight">Admin Dashboard</span>
+    <div style={{ padding: "28px 24px", maxWidth: 1100, margin: "0 auto" }}>
+
+      {/* ── Hero card ── */}
+      <div style={{
+        position: "relative", overflow: "hidden",
+        borderRadius: 24, marginBottom: 30,
+        background: "linear-gradient(135deg, #0d1635 0%, #111c4e 50%, #0d1830 100%)",
+        border: "1px solid rgba(79,156,249,0.15)",
+        padding: "32px 36px",
+      }}>
+        {/* Decorative orbs */}
+        <div style={{
+          position: "absolute", top: -60, right: -60,
+          width: 280, height: 280, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(79,156,249,0.12) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
+        <div style={{
+          position: "absolute", bottom: -40, left: "35%",
+          width: 200, height: 200, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
+        {/* Grid pattern */}
+        <div style={{
+          position: "absolute", inset: 0, pointerEvents: "none",
+          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+        }} />
+
+        <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", gap: 24 }}>
+          {/* Shield badge */}
+          <div style={{
+            width: 72, height: 72, borderRadius: 20, flexShrink: 0,
+            background: "var(--gradient-blue)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 8px 32px rgba(79,156,249,0.4)",
+          }}>
+            <Shield size={34} style={{ color: "#fff" }} />
+          </div>
+
+          <div style={{ flex: 1 }}>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: "rgba(79,156,249,0.12)", border: "1px solid rgba(79,156,249,0.2)",
+              borderRadius: 999, padding: "3px 12px", marginBottom: 10,
+            }}>
+              <Zap size={10} style={{ color: "var(--accent-blue)" }} />
+              <span style={{ fontSize: 10, fontWeight: 700, color: "var(--accent-blue)", letterSpacing: "0.08em" }}>
+                ADMIN PANEL
+              </span>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2 bg-white/10 py-1.5 px-3 rounded-full border border-white/20">
-                <div className="h-7 w-7 bg-white rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-[#23538a]" />
+            <h1 style={{
+              fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 26,
+              marginBottom: 6, lineHeight: 1.2,
+            }}>
+              Welcome back,{" "}
+              <span style={{
+                background: "var(--gradient-primary)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+              }}>
+                {user?.username || "Admin"}
+              </span>
+            </h1>
+            <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>
+              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+              &nbsp;·&nbsp; Here's a live overview of your platform.
+            </p>
+          </div>
+
+          {/* Live indicator */}
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)",
+            borderRadius: 12, padding: "8px 16px", flexShrink: 0,
+          }}>
+            <span style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: "var(--accent-green)",
+              boxShadow: "0 0 8px rgba(34,197,94,0.7)",
+              display: "inline-block",
+              animation: "statusPulse 2s ease infinite",
+            }} />
+            <span style={{ color: "var(--accent-green)", fontSize: 12, fontWeight: 700 }}>Live</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Stat cards ── */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))",
+        gap: 16, marginBottom: 28,
+      }}>
+        {STAT_CONFIG.map((card, i) => (
+          <div key={i} style={{
+            background: "var(--bg-card)",
+            border: "1px solid var(--border)",
+            borderRadius: 20, padding: "22px 20px",
+            position: "relative", overflow: "hidden",
+            transition: "all 0.25s ease",
+            cursor: "default",
+          }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.transform = "translateY(-4px)";
+              (e.currentTarget as HTMLElement).style.borderColor = "var(--border-hover)";
+              (e.currentTarget as HTMLElement).style.boxShadow = `0 8px 32px ${card.glow}`;
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.transform = "";
+              (e.currentTarget as HTMLElement).style.borderColor = "var(--border)";
+              (e.currentTarget as HTMLElement).style.boxShadow = "";
+            }}>
+            {/* Corner glow */}
+            <div style={{
+              position: "absolute", top: -30, right: -30,
+              width: 100, height: 100, borderRadius: "50%",
+              background: card.gradient, opacity: 0.07, pointerEvents: "none",
+            }} />
+
+            {/* Icon */}
+            <div style={{
+              width: 42, height: 42, borderRadius: 13, marginBottom: 16,
+              background: `${card.glow}`,
+              border: `1px solid ${card.glow}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <card.icon size={20} style={{
+                background: card.gradient,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }} />
+            </div>
+
+            {loading ? (
+              <>
+                <div className="skeleton" style={{ height: 36, width: 80, borderRadius: 10, marginBottom: 8 }} />
+                <div className="skeleton" style={{ height: 12, width: 100, borderRadius: 6, marginBottom: 4 }} />
+                <div className="skeleton" style={{ height: 10, width: 72, borderRadius: 6 }} />
+              </>
+            ) : (
+              <>
+                <div style={{
+                  fontSize: 36, fontWeight: 800, letterSpacing: "-0.02em",
+                  fontFamily: "var(--font-display)", marginBottom: 4, lineHeight: 1,
+                  background: card.gradient,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}>
+                  {stats?.[card.key] ?? "—"}
                 </div>
-                <span className="text-white text-sm font-medium">
-                  {admin?.firstName}
-                </span>
+                <p style={{ fontWeight: 700, fontSize: 13, color: "var(--text-primary)", marginBottom: 3 }}>
+                  {card.label}
+                </p>
+                <p style={{ color: "var(--text-muted)", fontSize: 11 }}>
+                  {card.desc(stats)}
+                </p>
+              </>
+            )}
+
+            {/* Arrow */}
+            {!loading && (
+              <div style={{
+                position: "absolute", top: 16, right: 16,
+                color: "var(--text-muted)", opacity: 0.4,
+              }}>
+                <ArrowUpRight size={14} />
               </div>
-              
-              <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 px-4 py-2 bg-red-500/20 text-red-100 rounded-lg hover:bg-red-500/40 transition-all border border-red-500/30"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="text-sm font-semibold">Logout</span>
-              </button>
-            </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ── Message Statistics ── */}
+      <div style={{
+        background: "var(--bg-card)", border: "1px solid var(--border)",
+        borderRadius: 20, padding: "24px 28px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 11,
+            background: "rgba(45,212,191,0.12)", border: "1px solid rgba(45,212,191,0.2)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <MessageSquare size={16} style={{ color: "var(--accent-teal)" }} />
+          </div>
+          <div>
+            <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15 }}>
+              Message Statistics
+            </h3>
+            <p style={{ color: "var(--text-muted)", fontSize: 12 }}>Detailed breakdown of platform messages</p>
           </div>
         </div>
-      </nav>
 
-      {/* Main Content */}
-      <main className="relative z-10 max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        
-        {/* Welcome Section */}
-        <div className="mb-10 text-white drop-shadow-md">
-          <h1 className="text-4xl font-extrabold mb-2">
-            Welcome back, {admin?.firstName}!
-          </h1>
-          <p className="text-white/80 font-medium">
-            System Overview & User Management
-          </p>
-        </div>
-
-        {/* Stats Cards - Added glassmorphism style */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          {[
-            { label: 'Total Users', val: users.length, Icon: Users, color: 'bg-blue-500' },
-            { label: 'Active Today', val: '12', Icon: BarChart3, color: 'bg-emerald-500' },
-            { label: 'Admins', val: users.filter(u => u.role === 'admin').length, Icon: Shield, color: 'bg-purple-500' }
-          ].map((stat, i) => (
-            <div key={i} className="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl p-6 border border-white/20 transform transition hover:scale-[1.02]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 text-sm font-bold uppercase tracking-wider">{stat.label}</p>
-                  <p className="text-4xl font-black text-gray-900 mt-1">{stat.val}</p>
-                </div>
-                <div className={`h-14 w-14 ${stat.color} rounded-2xl flex items-center justify-center shadow-lg`}>
-                  <stat.Icon className="h-7 w-7 text-white" />
-                </div>
+        {loading ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            {[1, 2, 3].map((i) => (
+              <div key={i} style={{ padding: 16, borderRadius: 14, background: "rgba(255,255,255,0.02)", border: "1px solid var(--border)" }}>
+                <div className="skeleton" style={{ height: 10, width: 80, borderRadius: 4, marginBottom: 10 }} />
+                <div className="skeleton" style={{ height: 28, width: 60, borderRadius: 6 }} />
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Users Table - Glassy White */}
-        <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border border-white/20">
-          <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-            <h2 className="text-xl font-bold text-gray-800">User Directory</h2>
-            <button
-              onClick={() => router.push('/admin/users/create')}
-              className="flex items-center space-x-2 px-5 py-2.5 bg-[#23538a] text-white rounded-xl hover:bg-[#1a3e68] transition-all shadow-lg active:scale-95"
-            >
-              <PlusCircle className="h-5 w-5" />
-              <span className="font-bold">Add New Member</span>
-            </button>
+            ))}
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead>
-                <tr className="bg-gray-100/50 text-gray-600">
-                  <th className="px-8 py-4 text-left text-xs font-bold uppercase tracking-widest">User Details</th>
-                  <th className="px-8 py-4 text-left text-xs font-bold uppercase tracking-widest">Email Address</th>
-                  <th className="px-8 py-4 text-left text-xs font-bold uppercase tracking-widest">Permission</th>
-                  <th className="px-8 py-4 text-left text-xs font-bold uppercase tracking-widest">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {users.map((user) => (
-                  <tr key={user._id} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="px-8 py-5">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-[#23538a] to-[#8a9db0] flex items-center justify-center text-white font-bold shadow-sm">
-                          {user.firstName[0]}
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-bold text-gray-900">{user.firstName} {user.lastName}</div>
-                          <div className="text-xs text-gray-400">@{user.username}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5 text-sm text-gray-600 font-medium">{user.email}</td>
-                    <td className="px-8 py-5">
-                      <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full ${
-                        user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'
-                      }`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="px-8 py-5 space-x-3">
-                      <button onClick={() => router.push(`/admin/users/${user._id}/edit`)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all"><Edit className="h-5 w-5" /></button>
-                      <button onClick={() => handleDeleteUser(user._id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all"><Trash2 className="h-5 w-5" /></button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        ) : msgStats ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14 }}>
+            {Object.entries(msgStats).map(([key, val], idx) => {
+              const gradients = [
+                "var(--gradient-teal)", "var(--gradient-blue)", "var(--gradient-primary)",
+                "var(--gradient-amber)", "var(--gradient-green)",
+              ];
+              const g = gradients[idx % gradients.length];
+              return (
+                <div key={key} style={{
+                  padding: "16px 18px", borderRadius: 14,
+                  background: "rgba(255,255,255,0.02)", border: "1px solid var(--border)",
+                  transition: "border-color 0.2s",
+                }}
+                  onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.borderColor = "var(--border-hover)"}
+                  onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"}>
+                  <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", color: "var(--text-muted)", textTransform: "uppercase", marginBottom: 8 }}>
+                    {key.replace(/([A-Z])/g, " $1").trim()}
+                  </p>
+                  <p style={{
+                    fontSize: 28, fontWeight: 800, fontFamily: "var(--font-display)",
+                    background: g, WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent", backgroundClip: "text",
+                  }}>
+                    {String(val)}
+                  </p>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      </main>
+        ) : (
+          <div style={{ textAlign: "center", padding: "28px 0", color: "var(--text-muted)", fontSize: 13 }}>
+            No message statistics available
+          </div>
+        )}
+      </div>
     </div>
   );
 }

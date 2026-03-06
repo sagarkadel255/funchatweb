@@ -1,45 +1,70 @@
-import express, { Application, Request, Response } from 'express';
-import bodyParser from 'body-parser';
-import { connectDatabase } from './database/mongodb';
-import { PORT } from './config';
-import authRoutes from "./routes/auth.routes";
-import adminRoutes from "./routes/admin.routes"; // ADD THIS IMPORT
-import cors from 'cors';
-import path from 'path'; // ADD THIS IMPORT
+import express from "express";
+import { createServer } from "http";
+import { Server } from "socket.io";
+import compression from "compression";
+import morgan from "morgan";
+import "express-async-errors";
 
-const app: Application = express();
+import routes from "./routes";
+import { connectDB } from "./config/database";
+import { config } from "./config/env";
+import { errorHandler, notFoundHandler } from "./middleware/error";
+import { corsMiddleware, securityMiddleware } from "./middleware/security";
+import { apiLimiter } from "./middleware/ratelimit";
+import { SocketService } from "./services/socketservice";
 
-const corsOptions = {
-    origin: ['http://localhost:3000', 'http://localhost:3003', 'http://localhost:3005'],
-    optionsSuccessStatus: 200,
+const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: true,
     credentials: true,
-};
-app.use(cors(corsOptions));
-
-// Middleware
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// Serve static files (for uploaded images)
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
-
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes); // ADD THIS LINE
-
-app.get('/', (req: Request, res: Response) => {
-    return res.status(200).json({ success: "true", message: "Welcome to the API" });
+  },
 });
 
-async function startServer() {
-    await connectDatabase();
+// Connect Database
+connectDB();
 
-    app.listen(
-        PORT,
-        () => {
-            console.log(`Server: http://localhost:${PORT}`);
-        }
-    );
-}
+// Middleware
+app.use(compression());
+app.use(morgan("combined"));
+app.use(securityMiddleware);
+app.use(corsMiddleware);
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
+app.use("/uploads", express.static("uploads"));
+app.use(apiLimiter);
 
-startServer();
+// Initialize Socket.io Service
+new SocketService(io);
+
+// Routes
+app.use("/api", routes);
+
+// Health check
+app.get("/health", (req, res) => {
+  res.json({ status: "OK", timestamp: new Date() });
+});
+
+// Error Handling
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+// Start Server
+const PORT = config.port;
+server.listen(PORT, () => {
+  console.log(`\n✅ Server running on port ${PORT}`);
+  console.log(`📝 Environment: ${config.nodeEnv}`);
+  console.log(`🗄️  MongoDB: ${config.mongodb.uri}\n`);
+});
+
+// Graceful Shutdown
+process.on("SIGINT", async () => {
+  console.log("\n🛑 Shutting down gracefully...");
+  server.close(() => {
+    console.log("✅ Server closed");
+    process.exit(0);
+  });
+});
+
+export { app, server, io };
